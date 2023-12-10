@@ -2,10 +2,12 @@ package com.example.pad
 
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,18 +46,31 @@ class MainActivity : ComponentActivity() {
         mediaPlayer = MediaPlayer.create(this, R.raw.click_sound)
 
     }
+    fun getSoundResourceId(context: MainActivity, row: Int, column: Int): Int {
+        val resourceName = "click_sound_${column}_${row}"
+        return context.resources.getIdentifier(resourceName, "raw", context.packageName)
+    }
 
     private fun onGridButtonClick(row: Int, column: Int) {
-        // Play the sound
-        if (mediaPlayer.isPlaying) {
-            mediaPlayer.stop()
-            mediaPlayer.release()
-            mediaPlayer = MediaPlayer.create(this, R.raw.click_sound)
-        }
-        mediaPlayer.start()
-
-        // Example action
         Toast.makeText(this, "Button clicked at row $row and column $column", Toast.LENGTH_SHORT).show()
+
+        val resourceId = getSoundResourceId(this, row, column)
+        if (resourceId != 0) { // Resource found
+            if (mediaPlayer.isPlaying) {
+                mediaPlayer.stop()
+                mediaPlayer.release()
+            }
+            mediaPlayer = MediaPlayer.create(this, resourceId)
+            mediaPlayer?.start() // Play the sound
+        } else {
+            // Handle the case where the resource is not found
+            Log.e("SoundError", "Resource not found for row $row and column $column")
+        }
+
+        // Play the sound
+        // mediaPlayer = MediaPlayer.create(this, R.raw.click_sound)
+
+
     }
 
     override fun onDestroy() {
@@ -72,23 +87,35 @@ class MainActivity : ComponentActivity() {
 fun Greeting(
     name: String,
     modifier: Modifier = Modifier,
-    onButtonClick: (row: Int, column: Int) -> Unit // Specify the types here
+    onButtonClick: (row: Int, column: Int) -> Unit
 ) {
     val numberOfRows = 3
     val numberOfColumns = 3
 
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        // Utilise fillMaxSize() pour que la colonne occupe tout l'espace disponible.
         for (row in 0 until numberOfRows) {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = true)
+                // Utilise weight(1f, true) pour que chaque rangée prenne une part égale de l'espace vertical.
+            ) {
                 for (column in 0 until numberOfColumns) {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .weight(1f)
-                            .aspectRatio(1f)
-                            .padding(4.dp)
+                            .fillMaxHeight()
+                        // Utilise fillMaxHeight() pour que la boîte occupe tout l'espace vertical disponible dans la rangée.
                     ) {
-                        Button(onClick = { onButtonClick(row, column) }) {
+                        Button(
+                            onClick = { onButtonClick(row, column) },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(5.dp),
+                                shape = RoundedCornerShape(10.dp)
+                            // Utilise fillMaxSize() pour que le bouton occupe toute la taille de la boîte.
+                        ) {
                             Text(text = "Button $row$column")
                         }
                     }
@@ -97,6 +124,7 @@ fun Greeting(
         }
     }
 }
+
 
 
 @Preview(showBackground = true)
